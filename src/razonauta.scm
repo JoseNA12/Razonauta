@@ -10,14 +10,11 @@
         (field 
             (deduccion null)
             (_arbol null)
-            (baseConocimiento null)
         )
 
         ;; -------------- METODOS PRINCIPALES -------------- ;;
 
         (define/public (acepte-deduccion pExpresion)
-
-            (init-baseConocimiento)
 
             (define p1 (new Parser))
             (set! deduccion (car (send p1 get-deduccion-root pExpresion)))
@@ -43,7 +40,7 @@
             (display "mesta")
         )
 
-        (define/public (prueba-deduccion)
+        (define/public (pruebe-deduccion)
             
             ; llamar a MotorPrueba
             (define m1 (new MotorPrueba))
@@ -54,17 +51,7 @@
             (display "arbol")
         )
 
-        ;; -------------- OTROS MÉTODOS -------------- ;;
-        (define/public (init-baseConocimiento)
-            (cond
-                ((null? baseConocimiento)
-                    (set! baseConocimiento (new BaseConocimiento))
-                    (send baseConocimiento init)
-                ) ; else ya existe la base de conocimiento
-            )
-            ;(display (send (car (send baseConocimiento get-listaInferencias)) get-premisas))
-            ;(display (send (car (send baseConocimiento get-listaTautologias)) get-axioma-1))
-        )
+
 
         ;; ----------------- ;;
         (super-new)
@@ -109,12 +96,19 @@
 
 (define MotorPrueba
     (class object%
-        
+
         (define/public (probar-deduccion pDeduccion)
             ; separa las premisas/conclusiones mediante la coma y las mete en una lista 
             (define lstPremisas (str-split (send pDeduccion get-premisa) #\,))
             (define lstConclusiones (str-split (send pDeduccion get-conclusion) #\,))
-            (display lstConclusiones)
+            ;(send ET aplicar-tautologia)
+
+            (for ([premisa lstPremisas]) ; iterator binding
+                (send ET aplicar-tautologia premisa)
+            )
+            (display "fuck")
+            ; llamar estratega
+
         )
 
         (define/public (str-split str ch) ; fuente: https://gist.github.com/matthewp/2324447
@@ -130,6 +124,7 @@
                             (else (split a (+ 1 b)))))))
                             (split 0 0))))
 
+
         (super-new)
     )
 )
@@ -138,12 +133,33 @@
 ; Fuerza Bruta
 (define Estratega
     (class object%
-        (define/public (and-izquierdo argumento)
-            (define listaArgumento (string->list argumento))
-            (define operando_1 (car listaArgumento))
-            (define operando_2 (caddr listaArgumento))
-            (list operando_1 operando_2)
+
+        ; ------------ Axiomas de Equivalencia (Tautologías) ------------ ;        
+
+        (define/public (aplicar-tautologia pExpresion)
+            (for ([i (send BC get-listaTautologias)]) ; iterator binding
+                (define axioma1 (send i get-axioma-1))
+                (define axioma2 (send i get-axioma-2))
+                
+                (cond
+                    ((and (regexp-match? axioma1 pExpresion) (mismo-len? axioma1 pExpresion))
+                        (display pExpresion) (display " puede aplicar: ") (display axioma2) (newline)
+                    )
+                    ((and (regexp-match? axioma2 pExpresion) (mismo-len? axioma2 pExpresion))
+                        (display pExpresion) (display " puede aplicar: ") (display axioma1) (newline)
+                    )
+                    ;(else (display "picha"))
+                )
+                
+            )
         )
+
+        (define (mismo-len? a b)
+            (if (= (string-length a) (string-length b))
+                #t
+                #f)
+        )
+
 
         (super-new)
     )
@@ -168,6 +184,39 @@
         (super-new)
     )
 )
+
+
+; Fuerza Bruta
+; (define Estratega
+;   (class object%
+;           ; ~p
+;           ; p⮕q
+;           ; ((pvq)⮕r)
+;         (define/public (analizarArgumento argumento lado)
+;             (define ladoDerecho 0)
+;             (define listaArgumento (string->list argumento))
+;             (define operador (cadr listaArgumento))
+;             (cond
+;                 ((equal? operador "^")
+;                     (if (equal? lado ladoDerecho)
+;                         ("and-der")
+;                         ("and-izq")))
+;                 ((equal? operador "⮕")
+;                         ("implica"))
+;                 ((equal? operador "v")
+;                     (if (equal? lado ladoDerecho)
+;                         ("or-der")
+;                         ("or-izq")))
+;                 ((equal? operador "~")
+;                     (if (equal? lado ladoDerecho)
+;                         ("neg-der")
+;                         ("neg-izq")))
+;                 (else (display "operador no encontrado"))
+;             )
+;         )
+;         (super-new)
+;     )
+; )
 
 
 (define Deduccion
@@ -203,40 +252,6 @@
 
         (define/public (get-regla) regla) 
 
-        (super-new)
-    )
-)
-
-
-
-; Fuerza Bruta
-(define Estratega
-  (class object%
-          ; ~p
-          ; p⮕q
-          ; ((pvq)⮕r)
-        (define/public (analizarArgumento argumento lado)
-            (define ladoDerecho 0)
-            (define listaArgumento (string->list argumento))
-            (define operador (cadr listaArgumento))
-            (cond
-                ((equal? operador "^")
-                    (if (equal? lado ladoDerecho)
-                        ("and-der")
-                        ("and-izq")))
-                ((equal? operador "⮕")
-                        ("implica"))
-                ((equal? operador "v")
-                    (if (equal? lado ladoDerecho)
-                        ("or-der")
-                        ("or-izq")))
-                ((equal? operador "~")
-                    (if (equal? lado ladoDerecho)
-                        ("neg-der")
-                        ("neg-izq")))
-                (else (display "operador no encontrado"))
-            )
-        )
         (super-new)
     )
 )
@@ -313,6 +328,7 @@
         (define/public (init)
             (set-inferencias)
             (set-tautologias)
+            (display "Base de Conocimiento creada!.") (newline)
         )
 
         (define/public (get-listaInferencias) listaInferencias)
@@ -389,72 +405,72 @@
             (define tautologia
                 (new Tautologia
                     (nombre "Doble negación")
-                    (axioma_1 "~~p")
-                    (axioma_2 "p"))
+                    (axioma_1 "~~.") ; "~~p"
+                    (axioma_2 ".")) ; p
             )
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
                 (nombre "Definicion de equivalencia")
-                (axioma_1 "p<->q")
-                (axioma_2 "(p->q)^(q->p)")))
+                (axioma_1 ".<->.") ; "p<->q"
+                (axioma_2 "(.->.)^(.->.)"))) ; (p->q)^(q->p)
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
                 (nombre "Contrapositiva")
-                (axioma_1 "~p->~q")
-                (axioma_2 "q->p")))
+                (axioma_1 "~.->~.") ; "~p->~q"
+                (axioma_2 ".->."))) ; "q->p"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
-                (nombre "Leyes de De Morgan")
-                (axioma_1 "~(p^q)")
-                (axioma_2 "(~pv~q)")))
+                (nombre "Ley de De Morgan 1")
+                (axioma_1 "~(.^.)") ; "~(p^q)"
+                (axioma_2 "(~.v~.)"))) ; "(~pv~q)"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
-                (nombre "Leyes de De Morgan")
-                (axioma_1 "~(pvq)")
-                (axioma_2 "(~p^~q)")))
+                (nombre "Ley de De Morgan 2")
+                (axioma_1 "~(.v.)") ; "~(pvq)"
+                (axioma_2 "(~.^~.)"))) ; "(~p^~q)"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
                 (nombre "Negacion de Implicacion")
-                (axioma_1 "~(p->q)")
-                (axioma_2 "(p^~q)")))
+                (axioma_1 "~(.->.)") ; "~(p->q)"
+                (axioma_2 "(.^~.)"))) ; "(p^~q)"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
                 (nombre "Implicacion Material")
-                (axioma_1 "p->q")
-                (axioma_2 "~pvq")))
+                (axioma_1 ".->.") ; "p->q"
+                (axioma_2 "~.v."))) ; "~pvq"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
-                (nombre "Leyes Distributivas")
-                (axioma_1 "p^(qvr)")
-                (axioma_2 "(p^q)v(p^r)")))
+                (nombre "Ley Distributiva 1")
+                (axioma_1 ".^(.v.)") ; "p^(qvr)"
+                (axioma_2 "(.^.)v(.^.)"))) ; "(p^q)v(p^r)"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
-                (nombre "Leyes Distributivas")
-                (axioma_1 "pv(q^r)")
-                (axioma_2 "(pvq)^(pvr)")))
+                (nombre "Ley Distributiva 2")
+                (axioma_1 ".v(.^.)") ; "pv(q^r)"
+                (axioma_2 "(.v.)^(.v.)"))) ; "(pvq)^(pvr)"
             (set! listaTautologias (cons tautologia listaTautologias))
 
             (set! tautologia
             (new Tautologia
                 (nombre "Exportacion")
-                (axioma_1 "p->(q->r)")
-                (axioma_2 "(p^q)->r")))
+                (axioma_1 ".->(.->.)") ; "p->(q->r)"
+                (axioma_2 "(.^.)->."))) ; "(p^q)->r"
             (set! listaTautologias (cons tautologia listaTautologias))
         )
 
@@ -462,13 +478,20 @@
     )
 )
 
+; ------------ VALORES DE INICIO DEL PROGRAMA ------------ ;
+
+; crear la base de conocimiento
+(define BC (new BaseConocimiento))
+(send BC init)
+
+(define ET (new Estratega))
+
+; -------------------------------------------------------- ;
+
+; ------------ PRUEBAS DEL PROGRAMA ------------ ;
 
 (define p1 (new Probador))
 (send p1 acepte-deduccion "p->q,~r => ~q->~p")
-(send p1 prueba-deduccion)
+(send p1 pruebe-deduccion)
 
-
-(define (is-variable-a-letter? x)
-  (let ((var (string->list (symbol->string x))))
-    (and (= (length var) 1)
-         (char-alphabetic? (car var)))))
+; -------------------------------------------------------- ;
