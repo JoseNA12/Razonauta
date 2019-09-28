@@ -1,0 +1,15 @@
+And-izq: Convierte and en comas, haciendo 2 nuevas premisas
+
+And-derecho: Divide el árbol en 2 ramas, cada rama prueba una conclusión diferente, pero se tienen que probar True ambas.
+
+Or-izq: Divide premisas en 2 ramas.
+
+Or-derecho: Divide OR en dos ramas con cada rama con una conclusión diferente. Con solo que salga una True ya todo es True
+
+Not-izquierdo: Doble negación pasa a positivo. Si no hay doble negación se pasa el argumento al lado de conclusión positivo
+
+Not derecho: Doble negación a positivo. Si no se pasa el argumento al lado de premisas positivo
+
+Implica: los implica son transformados en un or de la negación del argumento izquierdo y el argumento derecho. 
+
+ff : las dobles implicaciones son transformadas en dos implicaciones. El argumento izquierdo implica el derecho y viceversa.

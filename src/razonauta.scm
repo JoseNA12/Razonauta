@@ -1,5 +1,7 @@
 #lang scheme
 
+; ⮕ ⟶ ⟷ 
+
 (require (lib "class.ss"))
  
 
@@ -42,7 +44,10 @@
         )
 
         (define/public (prueba-deduccion)
-            (display "esta")
+            
+            ; llamar a MotorPrueba
+            (define m1 (new MotorPrueba))
+            (send m1 probar-deduccion deduccion)
         )
 
         (define/public (arbol)
@@ -62,6 +67,104 @@
         )
 
         ;; ----------------- ;;
+        (super-new)
+    )
+)
+
+
+(define Parser
+    (class object%
+    
+        ; Dar formato a la entrada del usuario, al momento de hacer acepte-deduccion
+        (define/public (get-deduccion-root pExpresion)
+            ; (p->q) => ((~q)->(~p)) - LO PASA A LISTA - "(p->q)" "=>" "((~q)->(~p))"
+            (define listaExp (string-split pExpresion))
+            (define tempDeduc (new Deduccion))
+
+            (cond ((> (length listaExp) 0)
+                    (send tempDeduc set-premisa (car listaExp))
+                    (cond ((>= (length listaExp) 3)
+                            (send tempDeduc set-conclusion (car (cdr (cdr listaExp))))
+                        )
+                    ) ;(else ("Expresión incompleta"))
+                ) ;(else (display "No se ingresó una expresión"))
+            
+            )
+            ; return
+            (list tempDeduc)
+        )
+
+        (define/public (es-caracter-alfabetico? x)
+            (and (char? x) (char-alphabetic? x)) ; return true o false
+        )
+
+        (define/public (convertirALista str)
+            (list (string->list str))
+        )
+
+        (super-new)
+    )
+)
+
+
+(define MotorPrueba
+    (class object%
+        
+        (define/public (probar-deduccion pDeduccion)
+            ; separa las premisas/conclusiones mediante la coma y las mete en una lista 
+            (define lstPremisas (str-split (send pDeduccion get-premisa) #\,))
+            (define lstConclusiones (str-split (send pDeduccion get-conclusion) #\,))
+            (display lstConclusiones)
+        )
+
+        (define/public (str-split str ch) ; fuente: https://gist.github.com/matthewp/2324447
+            (let ((len (string-length str)))
+                (letrec
+                ((split
+                    (lambda (a b)
+                    (cond
+                        ((>= b len) (if (= a b) '() (cons (substring str a b) '())))
+                        ((char=? ch (string-ref str b)) (if (= a b)
+                            (split (+ 1 a) (+ 1 b))
+                            (cons (substring str a b) (split b b))))
+                            (else (split a (+ 1 b)))))))
+                            (split 0 0))))
+
+        (super-new)
+    )
+)
+
+
+; Fuerza Bruta
+(define Estratega
+    (class object%
+        (define/public (and-izquierdo argumento)
+            (define listaArgumento (string->list argumento))
+            (define operando_1 (car listaArgumento))
+            (define operando_2 (caddr listaArgumento))
+            (list operando_1 operando_2)
+        )
+
+        (super-new)
+    )
+)
+
+
+(define ArbolPrueba
+    (class object%
+        
+        ; Usar Estratega
+
+        (super-new)
+    )
+)
+
+
+(define Justificador
+    (class object%
+        
+        
+
         (super-new)
     )
 )
@@ -94,59 +197,6 @@
 
         (define/public (set-regla pRegla)
             (set! regla pRegla)
-        )
-
-        (super-new)
-    )
-)
-
-
-(define Parser
-    (class object%
-    
-        ; Dar formato a la entrada del usuario, al momento de hacer acepte-deduccion
-        (define/public (get-deduccion-root pExpresion)
-            ; (p->q) => ((~q)->(~p)) - LO PASA A LISTA - "(p->q)" "=>" "((~q)->(~p))"
-            (define listaExp (string-split pExpresion))
-            (define tempDeduc (new Deduccion))
-
-            (cond ((> (length listaExp) 0)
-                    (send tempDeduc set-premisa (car listaExp))
-                    (cond ((>= (length listaExp) 3)
-                            (send tempDeduc set-conclusion (car (cdr (cdr listaExp))))
-                        )
-                    ) ;(else ("Expresión incompleta"))
-                ) ;(else (display "No se ingresó una expresión"))
-            
-            )
-            ; return
-            (list tempDeduc)
-        )
-
-        (define/public (es-caracter-alfabetico? x)
-            (char-alphabetic? x) ; return true o false
-        )
-
-        (define/public (convertirALista str)
-            (list (string->list str))
-        )
-
-        (define/public (iterate lst)
-            (cond ((> (length lst) 0)
-                    (display (car lst))
-                    (iterate (cdr lst))
-                )
-            )
-        )
-
-        (define/public (es-formula1 str) ; p -> q , ¬q => ¬p
-            (define lst (string->list str))
-            (cond ((= (length lst) 7)
-                    (display (car lst))
-                    (iterate (cdr lst))
-                )
-                (else #f)
-            )
         )
 
         (super-new)
@@ -215,16 +265,6 @@
 )
 
 
-(define MotorPrueba
-    (class object%
-        
-
-
-        (super-new)
-    )
-)
-
-
 (define BaseConocimiento
     (class object%
         (field 
@@ -280,7 +320,7 @@
 
             (set! inferencia
             (new Inferencia
-                (nombre "Modus Tolledno Ponens")
+                (nombre "Modus Tollendo Ponens")
                 (listaPremisas '("pvq" "~p"))
                 (conclusion "q")))
             (set! listaInferencias (cons inferencia listaInferencias))
@@ -386,4 +426,11 @@
 
 
 (define p1 (new Probador))
-(send p1 acepte-deduccion "p->q => ~q->~p")
+(send p1 acepte-deduccion "p->q,~r => ~q->~p")
+(send p1 prueba-deduccion)
+
+
+(define (is-variable-a-letter? x)
+  (let ((var (string->list (symbol->string x))))
+    (and (= (length var) 1)
+         (char-alphabetic? (car var)))))
