@@ -91,10 +91,14 @@
         (define/public (set-formula pFormula)
             (set! formula pFormula)
         )
+      
+        (define/public (get-formula) formula) 
 
         (define/public (set-regla pRegla)
             (set! regla pRegla)
         )
+
+        (define/public (get-regla) regla) 
 
         (super-new)
     )
@@ -149,6 +153,40 @@
             )
         )
 
+        (super-new)
+    )
+)
+
+
+
+; Fuerza Bruta
+(define Estratega
+  (class object%
+          ; ~p
+          ; p⮕q
+          ; ((pvq)⮕r)
+        (define/public (analizarArgumento argumento lado)
+            (define ladoDerecho 0)
+            (define listaArgumento (string->list argumento))
+            (define operador (cadr listaArgumento))
+            (cond
+                ((equal? operador "^")
+                    (if (equal? lado ladoDerecho)
+                        ("and-der")
+                        ("and-izq")))
+                ((equal? operador "⮕")
+                        ("implica"))
+                ((equal? operador "v")
+                    (if (equal? lado ladoDerecho)
+                        ("or-der")
+                        ("or-izq")))
+                ((equal? operador "~")
+                    (if (equal? lado ladoDerecho)
+                        ("neg-der")
+                        ("neg-izq")))
+                (else (display "operador no encontrado"))
+            )
+        )
         (super-new)
     )
 )
