@@ -70,12 +70,73 @@
             (newline)
             (display (car expresion))
             (newline)
-            (evaluarExpresionRegular expresion)
+            (define operacion (evaluarExpresionRegular (car expresion)))
+            (newline)
+            (display "operandos ")
+            (display (send operacion get-operandos))
+            (newline)
+            (display "negativo ")
+            (define operandos (send operacion get-operandos))
+            (display (send (car operandos) get-operandos))
+            (newline)
+          ;  (evaluarExpresionRegular (car(cdr expresion)))
 
         )
 
         (define/public (evaluarExpresionRegular expresion)
-            ; Sacar el patron que sigue la expresion y apartir de eso 
+            ; Sacar el patron que sigue la expresion y apartir de eso
+            (define listaExp (string->list expresion))
+            (cond
+                ((regexp-match? ".->(." expresion)  
+                    (display " Implica, parentesis segundo ") 
+                    (newline)
+                    (display expresion) 
+                    (define operador1 (getElementoIndice 0 listaExp))
+                    (define parentesis (substring expresion 4)) ; caracter despues del parentesis 
+                    (define objParentesis (evaluarExpresionRegular parentesis))
+                    (define implica (crearObjectoOperacion (list objParentesis operador1) "->" "zona"))
+                    implica
+                    ; p -> (p v (r ^ q)) p-> Obj  => (p v Obj => r ^ q)
+                    ; p v (r ^ q))  p v Obj
+                    ; r ^ q)) Obj
+                )
+                ((regexp-match? "~.->~." expresion)
+                    (display " Implica, doble negativo ") 
+                    (newline)
+                    (display expresion) 
+                    (define negativo1 (crearObjectoOperacion  (list (getElementoIndice 1 listaExp)) "~" "zona"))
+                    (define negativo2 (crearObjectoOperacion  (list (getElementoIndice 5 listaExp)) "~" "zona"))
+                    (define implica (crearObjectoOperacion (list negativo1 negativo2) "->" "zona"))
+                    implica
+                )
+                ((regexp-match? "~." expresion)
+                    (display expresion) (display " solo un negativo ") (newline)
+                )
+                ((regexp-match? ".->." expresion)
+                    (display expresion) (display " puede aplicar: ") (newline)
+                )
+            )
+            
+        )
+        (define (getTextoParentesis expresion )
+
+        )
+
+        (define (getElementoIndice n l)
+            (if (or (> n (length l)) (< n 0))
+                (error "Index out of bounds.")
+                (if (eq? n 0)
+                (car l)
+                (getElementoIndice (- n 1) (cdr l)))))
+                
+        (define/public (crearObjectoOperacion pOperandos pOperador pZona)
+            (define operacion
+                (new Operacion% (operandos pOperandos)
+                    (operador pOperador)
+                    (zona pZona)
+                )
+            )
+            operacion
         )
 
         (define/public (str-split str ch) ; fuente: https://gist.github.com/matthewp/2324447
@@ -100,5 +161,23 @@
 )
 
 
+(define Operacion%
+   (class object%
+      (init-field operandos operador zona)
+    
+      (define/public (get-operador)
+         operador) 
+
+     (define/public (get-operandos)
+         operandos)
+     
+     (define/public (get-zona)
+         zona)
+     
+      (super-new)
+   )
+)
+
 (define pb (new Probador))
-(send pb acepte-deduccion "p->q,~r => ~q->~p")
+(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
+
