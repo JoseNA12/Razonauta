@@ -23,6 +23,8 @@
             (display " => ")
             (display (send deduccion get-conclusion))
             (newline) (display "Listo.")
+
+          
         )
 
         (define/public (justifique)
@@ -64,14 +66,19 @@
     
         ; Dar formato a la entrada del usuario, al momento de hacer acepte-deduccion
         (define/public (get-deduccion-root pExpresion)
-            ; (p->q) => ((~q)->(~p)) - LO PASA A LISTA - "(p->q)" "=>" "((~q)->(~p))"
+             (define deduccion (separarExpresion pExpresion))
+          
+        )
+
+        (define/public (separarExpresion pExpresion)
+             ; (p->q) => ((~q)->(~p)) - LO PASA A LISTA - "(p->q)" "=>" "((~q)->(~p))"
             (define listaExp (string-split pExpresion))
-            (define tempDeduc (new Deduccion))
+            (define tempDeduc '())
 
             (cond ((> (length listaExp) 0)
-                    (send tempDeduc set-premisa (car listaExp))
+                    (set! tempDeduc (cons (car listaExp) tempDeduc))
                     (cond ((>= (length listaExp) 3)
-                            (send tempDeduc set-conclusion (car (cdr (cdr listaExp))))
+                            (set! tempDeduc (cons tempDeduc (car (cdr (cdr listaExp)))))
                         )
                     ) ;(else ("Expresión incompleta"))
                 ) ;(else (display "No se ingresó una expresión"))
@@ -79,6 +86,16 @@
             )
             ; return
             (list tempDeduc)
+        )
+
+        (define/public (parsearOperaciones expresion)
+            (define premisa (car expresion))
+            (define conclucion (car (cdr listaExp))) 
+
+            (display premisa)
+            (display conclucion)
+
+
         )
 
         (define/public (es-caracter-alfabetico? x)
@@ -96,17 +113,84 @@
 
 (define MotorPrueba
     (class object%
-
+        (field
+            (raizArbol null)
+        )
         (define/public (probar-deduccion pDeduccion)
-            ; separa las premisas/conclusiones mediante la coma y las mete en una lista 
-            (define lstPremisas (str-split (send pDeduccion get-premisa) #\,))
-            (define lstConclusiones (str-split (send pDeduccion get-conclusion) #\,))
-            ;(send ET aplicar-tautologia)
-
+            (set! raizArbol(new raiz% (premisa (send pDeduccion get-premisa)) (conclusion (send pDeduccion get-conclusion))))
+            (analizar-deduccion (send pDeduccion get-premisa) (send pDeduccion get-conclusion) raizArbol)
+        )
+; Adaptar info y enviarla al estratega
+        (define/public (analizar-deduccion premisa conclusion nodo)
+            (define lstPremisas (str-split premisa #\,))
+            (define lstConclusiones (str-split conclusion #\,))
+          
             (for ([premisa lstPremisas]) ; iterator binding
-                (send ET aplicar-tautologia premisa)
+                (define result (send ET aplicar-tautologia premisa))
+                (cond
+                  (not (equal? "" result)
+                        (send this construir-arbol result)))
             )
-            (display "fuck")
+        )
+; Implementar veredicto del estratega
+        (define/public (construir-arbol-izquierda argumento nodo)
+            (cond
+              ((equal? "and-izq" (car regla))
+                  (define nodoIzq (new nodo% (premisa "") (conclusion "")))
+                  (send nodoIzq set-formula "")
+                  (send nodoIzq set-regla "AND - Izquierda")
+                  (send nodoActual insert-izq nodoIzq)
+                  (send nodoActual print-nodo)
+                  (analizar-deduccion (send nodoIzq get-premisa)  (send nodoIzq get-conclusion) nodoIzq))
+                  
+              ((equal? "or-izq" (car regla))
+                  (define nodoDer (new nodo% (premisa "") (conclusion "")))
+                  (send nodoDer set-formula "")
+                  (send nodoDer set-regla "OR - Izquierda")
+                  (send nodoActual insert-der nodoDer)
+
+                  (analizar-deduccion (send nodoDer get-premisa)  (send nodoDer get-conclusion) nodoDer)
+                  
+                  (define nodoIzq (new nodo% (premisa "") (conclusion "")))
+                  (send nodoIzq set-formula "")
+                  (send nodoIzq set-regla "OR - Izquierda")
+                  (send nodoActual insert-izq nodoIzq)
+                  (send nodoActual print-nodo)
+
+                  (analizar-deduccion (send nodoIzq get-premisa)  (send nodoIzq get-conclusion) nodoIzq))
+            )
+          )
+
+       (define/public (construir-arbol-derecha regla nodo)
+            (cond
+              ((equal? "and-der" (car regla))
+                  (define nodoDer (new nodo% (premisa "deduccion de nodo1") (conclusion "sadasd")))
+                  (send nodoDer set-formula "formula nodo1")
+                  (send nodoDer set-regla "regla nodo1")
+                  (send nodoActual insert-der nodoDer)
+
+                  (analizar-deduccion (send nodoDer get-premisa)  (send nodoDer get-conclusion) nodoDer)
+                  
+                  (define nodoIzq (new nodo% (premisa "deduccion de nodo1") (conclusion "sadasd")))
+                  (send nodoIzq set-formula "formula nodo1")
+                  (send nodoIzq set-regla "regla nodo1")
+                  (send nodoActual insert-izq nodoIzq)
+                  (send nodoActual print-nodo)
+
+                  (analizar-deduccion (send nodoIzq get-premisa)  (send nodoIzq get-conclusion) nodoIzq))
+
+              ((equal? "or-izq" (car regla))
+                  (define nodoDer (new nodo% (premisa "deduccion de nodo1") (conclusion "sadasd")))
+                  (send nodoDer set-formula "formula nodo1")
+                  (send nodoDer set-regla "regla nodo1")
+                  (send nodoActual insert-der nodoDer)
+
+                  (define nodoIzq (new nodo% (premisa "deduccion de nodo1") (conclusion "sadasd")))
+                  (send nodoIzq set-formula "formula nodo1")
+                  (send nodoIzq set-regla "regla nodo1")
+                  (send nodoActual insert-izq nodoIzq)
+                  (send nodoActual print-nodo))
+            )
             ; llamar estratega
 
         )
@@ -166,15 +250,50 @@
 )
 
 
-(define ArbolPrueba
-    (class object%
-        
-        ; Usar Estratega
+;                 ESTRUCTURA DE LA SOLUCIÓN ENCONTRADA                          
+;Raiz del ábol
+(define raiz%
+   (class object%
+      (init-field premisa conclusion)
+     
+      (field (izq '()) (der '()))
+     
+      (define/public (insert-izq node)
+         (set! izq (cons node izq)))
 
-        (super-new)
-    )
-)
+      (define/public (get-node-izq)
+         (car izq))
 
+     (define/public (get-premisa)
+         (premisa))
+     
+     (define/public (get-conclusion)
+         (conclusion))
+     
+      (super-new)))
+
+;Nodos del árbol (herencia)
+(define nodo%
+   (class raiz%
+      (inherit-field premisa conclusion)
+     
+      (field (formula null) (regla null))
+
+      (define/public (set-formula nueva-formula)
+         (set! formula nueva-formula))
+
+      (define/public (set-regla nueva-regla)
+         (set! regla nueva-regla))
+
+      (define/public (to-string)
+         (if (and (not (null? formula))(not (null? regla)))
+             (string-append "Nodo : " premisa conclusion "   |-" formula "   |-"regla)
+             (string-append "Nodo : " premisa conclusion)))
+     
+      (define/public (print-nodo)
+         (define nodo-completo (send this to-string))
+         (printf nodo-completo))
+      (super-new)))
 
 (define Justificador
     (class object%
