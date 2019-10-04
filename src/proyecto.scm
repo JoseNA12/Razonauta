@@ -2,6 +2,7 @@
 
 (require (lib "class.ss"))
 
+
 (define Probador
     (class object%
         (field 
@@ -10,7 +11,19 @@
 
         (define/public (acepte-deduccion pExpresion)
             (define p1 (new Parser))
-            (send p1 parseExpression pExpresion)
+            (define tupla (send p1 parsearExpresion pExpresion)) ; tupla con los bloques de la expresion
+
+            (cond
+                ((not (equal? tupla #f))
+                    (define premisas (cdr tupla))
+                    (define conclusiones (car tupla))
+                    
+                    (define m1 (new Motor))
+                    (define superEstructura (send m1 iniciar premisas conclusiones))
+                    (display "")
+                )
+                (else #f) ; no haga nada
+            )
         )
 
         (super-new)
@@ -21,11 +34,24 @@
 (define Parser
     (class object%
       
-        (define/public (parseExpression pExpresion)
-             (define expresionSeparada (separarExpresion pExpresion))
-             (parsearOperaciones expresionSeparada)
+        ; Retorna una tupla con los bloques de la expresion (1- premisas y 2- conclusiones)
+        (define/public (parsearExpresion pExpresion)
+            (define expresionSeparada (separarExpresion pExpresion))
+
+            (cond
+                ((not (equal? expresionSeparada #f))
+                    (define lstPremisas (obtenerBloquesExpresion (car expresionSeparada)))
+                    (define lstConclusiones (obtenerBloquesExpresion (cdr expresionSeparada)))
+                    (append lstConclusiones lstPremisas) ; return
+                )
+                (else
+                    (display "La expresión ingresada presenta errores")
+                    #f
+                )
+            )
         )
 
+        ; Retorna una lista con la expresion separa en premisa y conclusion
         (define/public (separarExpresion pExpresion)
             (define listaExp (string-split pExpresion))
             (define tempDeduc '())
@@ -36,140 +62,23 @@
                     (cond 
                         ((>= (length listaExp) 3)
                             (set! tempDeduc (cons tempDeduc (car (cdr (cdr listaExp)))))
+                            tempDeduc
                         )
-                        (else 
-                            ("Expresión incompleta")
-                        )
-                    ) 
-
-                ) 
-                (else 
-                    (display "No se ingresó una expresión")
+                        (else #f)
+                    )
                 )
+                (else #f)
             )
-
-            tempDeduc
         )
 
-        (define/public (parsearOperaciones expresion)
-            (define premisa (car expresion))
-            (define conclucion (cdr expresion))
-            (display premisa)
-            (newline)
-          
-            (generarOperaciones premisa)
-            (display conclucion)
-            (newline)
-            (generarOperaciones conclucion)
+        ; Retorna una lista con la expresion dada separada segun las comas
+        (define/public (obtenerBloquesExpresion expresion)
+            (str-split expresion #\,)
         )
 
-        (define/public (generarOperaciones expresion)
-            ;(set! expresion (string->list expresion))
-            (set! expresion (str-split expresion #\,))
-            (display expresion)
-            (newline)
-            (display (car expresion))
-            (newline)
-            (define operacion (evaluarExpresionRegular (car expresion)))
-            (newline)
-            (display "operandos ")
-            (display (send operacion get-operandos))
-            (newline)
-            (display "negativo ")
-            (define operandos (send operacion get-operandos))
-            (display (send (car operandos) get-operandos))
-            (newline)
-          ;  (evaluarExpresionRegular (car(cdr expresion)))
-
-        )
-
-        (define/public (evaluarExpresionRegular expresion) 
-            ; p -> (p v (r ^ q)) 
-            (cond
-                ((regexp-match? "[^.]+\\([^.]+\\)[^.]+" expresion)
-                    (display expresion) 
-                    (display " Parentesis ") 
-                    (newline)
-                    (define inicioString (getPosition (string->list expresion) #\( 0)))
-                    (display inicioString)
-                    
-                    (display (substring expresion 0 inicioString))
-                   ; (define op1 (evaluarExpresionRegular (substring expresion inicioString)))
-                    ;op1
-                )
-                ((regexp-match? "\\(.\\)" expresion)
-                    (display expresion) 
-                    (display " Parentesis ") 
-                    (newline)
-                    (define inicioString (getPosition (string->list expresion) #\( 0)))
-                    (display inicioString)
-                    
-                    (display (substring expresion 0 inicioString))
-                   ; (define op1 (evaluarExpresionRegular (substring expresion inicioString)))
-                    ;op1
-                )
-                ((regexp-match? ".\\^." expresion)
-                    (display expresion) (display " Operacion AND ") (newline)
-                    (define inicioString (getPosition (string->list expresion) #\^ 0))
-                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
-                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
-                    (define opAnd (crearObjectoOperacion (list op1 op2) "^" "zona"))
-                )
-                ((regexp-match? ".v." expresion)
-                    (display expresion) (display " Operacion OR ") (newline)
-                    (define inicioString (getPosition (string->list expresion) #\v 0))
-                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
-                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
-                    (define opOr (crearObjectoOperacion (list op1 op2) "v" "zona"))
-                )
-                ((regexp-match? ".->." expresion)
-                    (display expresion) (display " Operacion Implica ") (newline)
-                    (define inicioString (getPosition (string->list expresion) #\- 0))
-                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
-                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
-                    (define implica (crearObjectoOperacion (list op1 op2) "->" "zona"))
-                )
-                ((regexp-match? "~." expresion)
-                    (display expresion) (display " Operacion Negativa ") (newline)
-                    (define op1 (evaluarExpresionRegular (substring expresion 1)))
-                    (define negativo (crearObjectoOperacion op1 "~" "zona"))
-                    negativo
-                )
-                ((and (regexp-match? "." expresion) (equal? (string-length expresion) 1))
-                    (display expresion) (display " Variable ") (newline)
-                    expresion
-                )
-            )
-            
-        )
-
-        (define (getPosition char-list char pos)
-            (cond ((null? char-list) #f)              ; list was empty
-                ((char=? char (car char-list)) pos) ; we found it!
-                (else (getPosition (cdr char-list) char (add1 pos)))
-            )
-        ) 
-
-
-        (define (getElementoIndice n l)
-            (if (or (> n (length l)) (< n 0))
-                (error "Index out of bounds.")
-                (if (eq? n 0)
-                (car l)
-                (getElementoIndice (- n 1) (cdr l))))
-        )
-                
-        (define/public (crearObjectoOperacion pOperandos pOperador pZona)
-            (define operacion
-                (new Operacion% (operandos pOperandos)
-                    (operador pOperador)
-                    (zona pZona)
-                )
-            )
-            operacion
-        )
-
-        (define/public (str-split str ch) ; fuente: https://gist.github.com/matthewp/2324447
+        ; Separa un string segun el caracter indicado
+        ; FUENTE: https://gist.github.com/matthewp/2324447
+        (define/public (str-split str ch) 
             (let ((len (string-length str)))
                 (letrec
                 ((split
@@ -188,26 +97,202 @@
         )
 
         (super-new)
-    ))
+    )
+)
+
+
+(define Motor
+    (class object%
+
+        ; Construir una tupla que contiene listas de arboles (bloques de premisas/conclusiones)
+        (define/public (iniciar pPremisas pConclusiones)
+            (define tupla '())
+
+            (cond
+                ((pair? pPremisas)
+                    (append tupla (construirEstructura (car pPremisas)))
+                    (iniciar (car pPremisas) pConclusiones)
+                )
+                ((pair? pConclusiones)
+                    (append tupla (construirEstructura (car pConclusiones)))
+                    (iniciar pPremisas (car pConclusiones))
+                )
+            )
+
+            tupla
+
+            ; (define arbolOperacion (construirEstructura (car pPremisas)))
+            ; (display arbolOperacion)
+            ; (newline)
+        )
+
+        (define/public (construirEstructura expresion) 
+            ; p -> (p v (r ^ q))
+            ; Contenido de 'lst' tiene la forma: '("expresion" "permisa" 'noImporta' "premisa")
+            (cond
+                ; (.) noImporta (.)
+                ((regexp-match? (send BC get-regx_1) expresion)
+                    (define lst (regexp-match (send BC get-regx_1) expresion))
+
+                    (define op1 (car (cdr lst)))
+                    (define oper (car (cddr lst)))
+                    (define op2 (car (cdddr lst)))
+                    (define obj (crearObjectoOperacion 
+                        (list 
+                            (construirEstructura op1) 
+                            (construirEstructura op2)
+                        )
+                        oper "zona")
+                    )
+                    (display "")
+                    ;(display "(.) noImporta (.)") (newline)
+                    ;(display lst)
+                )
+
+                ; (.) noImporta .
+                ((regexp-match? (send BC get-regx_2) expresion)
+                    (define lst (regexp-match (send BC get-regx_2) expresion))
+
+                    (define op1 (car (cdr lst)))
+                    (define oper (car (cddr lst)))
+                    (define op2 (car (cdddr lst)))
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura op1) op2) oper "zona")
+                    )
+                    (display "")
+
+                    ; (display "(.) noImporta .") (newline)
+                    ; (display lst)
+                )
+
+                ; . noImporta (.)
+                ((regexp-match? (send BC get-regx_3) expresion)
+                    (define lst (regexp-match (send BC get-regx_3) expresion))
+
+                    (define op1 (car (cdr lst)))
+                    (define oper (car (cddr lst)))
+                    (define op2 (car (cdddr lst)))
+                    (define obj (crearObjectoOperacion 
+                        (list op1 (construirEstructura op2)) oper "zona")
+                    )
+                    (display "")
+
+                    ; (display ". noImporta (.)") (newline)
+                    ; (display lst)
+                )
+
+                ; . noImporta .
+                ((regexp-match? (send BC get-regx_4) expresion)
+                    (define lst (regexp-match (send BC get-regx_4) expresion))
+
+                    (define op1 (car (cdr lst)))
+                    (define oper (car (cddr lst)))
+                    (define op2 (car (cdddr lst)))
+                    (define obj (crearObjectoOperacion (list op1 op2) oper "zona"))
+
+                    ; (display ". noImporta .") (newline)
+                    ;( display lst)
+
+                    obj
+                )
+
+                ; (.)
+                ((regexp-match? (send BC get-regx_5) expresion)
+                    (define lst (regexp-match (send BC get-regx_5) expresion))
+
+                    (construirEstructura (eliminarParentesis (car lst)))
+                    ; (display "(.)") (newline)
+                    ; (display lst)
+                )
+
+                ; .
+                ((regexp-match? (send BC get-regx_6) expresion)
+                    (define lst (regexp-match (send BC get-regx_6) expresion))
+                    ; (display ".") (newline)
+                    ;( display lst)
+
+                    (car lst)
+                )
+            )
+        )
+        ; Remueve los parentesis laterales de una expresión. Ej: "(pv(r^q))" -> "pv(r^q)" 
+        (define (eliminarParentesis pExpresion)
+            (define x (substring pExpresion 1))
+            (substring x 0 (- (string-length x) 1))
+        )
+                
+        (define/public (crearObjectoOperacion pOperandos pOperador pZona)
+            (define operacion
+                (new Operacion% (operandos pOperandos)
+                    (operador pOperador)
+                    (zona pZona)
+                )
+            )
+            operacion
+        )
+        (super-new)
+    )
+)
+
+
+(define BaseConocimiento
+    (class object%
+
+        ; [a-uw-z~]: Se incluye cualquier letra del abecedario excepto 'v' e incluyendo '~'
+        ; '^' al inicio indica que se debe empezar por ese caracter
+        ; '$' al final indica que coincide solo al final de la cadena (hace más estricto al patrón)
+
+        (field
+            ; (.) noImporta (.)
+            (regx_1 "(^\\([^.]+\\))(->|<->|v|\\^)(\\([^.]+\\))$")
+            ; (.) noImporta .
+            (regx_2 "(^\\([^.]+\\))(->|<->|v|\\^)([a-uw-z~]+)$")
+            ; . noImporta (.)
+            (regx_3 "(^[a-uw-z~]+)(->|<->|v|\\^)(\\([^.]+\\))$")
+            ; . noImporta .
+            (regx_4 "(^[a-uw-z~]+)(->|<->|v|\\^)([a-uw-z~]+)$")
+            ; (.)
+            (regx_5 "(^\\([^.]+\\))$")
+            ; .
+            (regx_6 "(^[a-uw-z~]+)$")
+        )
+
+        (define/public (get-regx_1) regx_1)
+        (define/public (get-regx_2) regx_2)
+        (define/public (get-regx_3) regx_3)
+        (define/public (get-regx_4) regx_4)
+        (define/public (get-regx_5) regx_5)
+        (define/public (get-regx_6) regx_6)
+
+        (super-new)
+    )
+)
 
 
 (define Operacion%
    (class object%
-      (init-field operandos operador zona)
-    
-      (define/public (get-operador)
-         operador) 
+        (init-field operandos operador zona)
+        
+        (define/public (get-operador)
+            operador) 
 
-     (define/public (get-operandos)
-         operandos)
-     
-     (define/public (get-zona)
-         zona)
-     
-      (super-new)
-   )
+        (define/public (get-operandos)
+            operandos)
+        
+        (define/public (get-zona)
+            zona)
+        
+        (super-new)
+    )
 )
 
-(define pb (new Probador))
-(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
+; ================================================================ ;
 
+(define BC (new BaseConocimiento))
+(define motor (new Motor))
+
+(define pb (new Probador))
+;(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
+(send pb acepte-deduccion "p->(pv(r^q)) => ~q->~p")
+
+; ================================================================ ;
