@@ -83,51 +83,70 @@
 
         )
 
-        (define/public (evaluarExpresionRegular expresion)
-            ; Sacar el patron que sigue la expresion y apartir de eso
-            (define listaExp (string->list expresion))
+        (define/public (evaluarExpresionRegular expresion) 
+            ; p -> (p v (r ^ q)) 
             (cond
-                ((regexp-match? ".->(." expresion)  
-                    (display " Implica, parentesis segundo ") 
-                    (newline)
+                ((regexp-match? "(.)" expresion)
                     (display expresion) 
-                    (define operador1 (getElementoIndice 0 listaExp))
-                    (define parentesis (substring expresion 4)) ; caracter despues del parentesis 
-                    (define objParentesis (evaluarExpresionRegular parentesis))
-                    (define implica (crearObjectoOperacion (list objParentesis operador1) "->" "zona"))
-                    implica
-                    ; p -> (p v (r ^ q)) p-> Obj  => (p v Obj => r ^ q)
-                    ; p v (r ^ q))  p v Obj
-                    ; r ^ q)) Obj
-                )
-                ((regexp-match? "~.->~." expresion)
-                    (display " Implica, doble negativo ") 
+                    (display " Parentesis ") 
                     (newline)
-                    (display expresion) 
-                    (define negativo1 (crearObjectoOperacion  (list (getElementoIndice 1 listaExp)) "~" "zona"))
-                    (define negativo2 (crearObjectoOperacion  (list (getElementoIndice 5 listaExp)) "~" "zona"))
-                    (define implica (crearObjectoOperacion (list negativo1 negativo2) "->" "zona"))
-                    implica
+                    (define inicioString (getPosition (string->list expresion) #\( 0)))
+                    (display inicioString)
+                    
+                    (display (substring expresion 0 inicioString))
+                   ; (define op1 (evaluarExpresionRegular (substring expresion inicioString)))
+                    ;op1
                 )
-                ((regexp-match? "~." expresion)
-                    (display expresion) (display " solo un negativo ") (newline)
+                ((regexp-match? ".\\^." expresion)
+                    (display expresion) (display " Operacion AND ") (newline)
+                    (define inicioString (getPosition (string->list expresion) #\^ 0))
+                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
+                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
+                    (define opAnd (crearObjectoOperacion (list op1 op2) "^" "zona"))
+                )
+                ((regexp-match? ".v." expresion)
+                    (display expresion) (display " Operacion OR ") (newline)
+                    (define inicioString (getPosition (string->list expresion) #\v 0))
+                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
+                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
+                    (define opOr (crearObjectoOperacion (list op1 op2) "v" "zona"))
                 )
                 ((regexp-match? ".->." expresion)
-                    (display expresion) (display " puede aplicar: ") (newline)
+                    (display expresion) (display " Operacion Implica ") (newline)
+                    (define inicioString (getPosition (string->list expresion) #\- 0))
+                    (define op1 (evaluarExpresionRegular (substring expresion 0 inicioString)))
+                    (define op2 (evaluarExpresionRegular (substring expresion (+ inicioString 1))))
+                    (define implica (crearObjectoOperacion (list op1 op2) "->" "zona"))
+                )
+                ((regexp-match? "~." expresion)
+                    (display expresion) (display " Operacion Negativa ") (newline)
+                    (define op1 (evaluarExpresionRegular (substring expresion 1)))
+                    (define negativo (crearObjectoOperacion op1 "~" "zona"))
+                    negativo
+                )
+                ((and (regexp-match? "." expresion) (equal? (string-length expresion) 1))
+                    (display expresion) (display " Variable ") (newline)
+                    expresion
                 )
             )
             
         )
-        (define (getTextoParentesis expresion )
 
-        )
+        (define (getPosition char-list char pos)
+            (cond ((null? char-list) #f)              ; list was empty
+                ((char=? char (car char-list)) pos) ; we found it!
+                (else (getPosition (cdr char-list) char (add1 pos)))
+            )
+        ) 
+
 
         (define (getElementoIndice n l)
             (if (or (> n (length l)) (< n 0))
                 (error "Index out of bounds.")
                 (if (eq? n 0)
                 (car l)
-                (getElementoIndice (- n 1) (cdr l)))))
+                (getElementoIndice (- n 1) (cdr l))))
+        )
                 
         (define/public (crearObjectoOperacion pOperandos pOperador pZona)
             (define operacion
@@ -150,15 +169,15 @@
                             (split (+ 1 a) (+ 1 b))
                             (cons (substring str a b) (split b b))))
                             (else (split a (+ 1 b)))))))
-                            (split 0 0))))
+                            (split 0 0)))
+        )
 
         (define/public (es-caracter-alfabetico? x)
             (and (char? x) (char-alphabetic? x)) 
         )
 
         (super-new)
-    )
-)
+    ))
 
 
 (define Operacion%
