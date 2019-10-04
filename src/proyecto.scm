@@ -86,7 +86,18 @@
         (define/public (evaluarExpresionRegular expresion) 
             ; p -> (p v (r ^ q)) 
             (cond
-                ((regexp-match? "(.)" expresion)
+                ((regexp-match? "[^.]+\\([^.]+\\)[^.]+" expresion)
+                    (display expresion) 
+                    (display " Parentesis ") 
+                    (newline)
+                    (define inicioString (getPosition (string->list expresion) #\( 0)))
+                    (display inicioString)
+                    
+                    (display (substring expresion 0 inicioString))
+                   ; (define op1 (evaluarExpresionRegular (substring expresion inicioString)))
+                    ;op1
+                )
+                ((regexp-match? "\\(.\\)" expresion)
                     (display expresion) 
                     (display " Parentesis ") 
                     (newline)
