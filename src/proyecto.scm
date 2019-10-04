@@ -20,7 +20,7 @@
                     
                     (define m1 (new Motor))
                     (define superEstructura (send m1 iniciar premisas conclusiones))
-                    (display "")
+                    (display superEstructura)
                 )
                 (else #f) ; no haga nada
             )
@@ -111,7 +111,7 @@
             (cond
                 ((pair? pPremisas)
                     (append tupla (construirEstructura (car pPremisas)))
-                    (iniciar (car pPremisas) pConclusiones)
+                    (iniciar (car pPremisas) pConclusiones) ; ir iterando entre los bloques de premisas de la lista
                 )
                 ((pair? pConclusiones)
                     (append tupla (construirEstructura (car pConclusiones)))
