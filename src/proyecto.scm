@@ -14,13 +14,14 @@
             (define tupla (send p1 parsearExpresion pExpresion)) ; tupla con los bloques de la expresion
 
             (cond
-                ((not (equal? tupla #f))
-                    (define premisas (cdr tupla))
-                    (define conclusiones (car tupla))
+                ((not (equal? tupla #f)) ; no existen errores en la deducción ingresada, continúe
+                    (define lstBloquesPremisas (car tupla))
+                    (define lstBloquesConclusiones (car (cdr tupla)))
                     
-                    (define m1 (new Motor))
-                    (define superEstructura (send m1 iniciar premisas conclusiones))
-                    (display superEstructura)
+                    (define estructuraPremisas (send motor crearEstructura lstBloquesPremisas '()))
+                    (define estructuraConclusiones (send motor crearEstructura lstBloquesConclusiones '()))
+                    (display "estructuraPremisas: ") (display estructuraPremisas) (newline)
+                    (display "estructuraConclusiones: ") (display estructuraConclusiones) (newline)
                 )
                 (else #f) ; no haga nada
             )
@@ -42,7 +43,7 @@
                 ((not (equal? expresionSeparada #f))
                     (define lstPremisas (obtenerBloquesExpresion (car expresionSeparada)))
                     (define lstConclusiones (obtenerBloquesExpresion (cdr expresionSeparada)))
-                    (append lstConclusiones lstPremisas) ; return
+                    (list lstPremisas lstConclusiones) ; return
                 )
                 (else
                     (display "La expresión ingresada presenta errores")
@@ -104,28 +105,36 @@
 (define Motor
     (class object%
 
-        ; Construir una tupla que contiene listas de arboles (bloques de premisas/conclusiones)
-        (define/public (iniciar pPremisas pConclusiones)
-            (define tupla '())
+        ; Construir una estructura lista que contiene objetos 'Operacion' en forma de "árbol"
+        (define/public (crearEstructura pPremisas pTupla)      
 
             (cond
                 ((pair? pPremisas)
-                    (append tupla (construirEstructura (car pPremisas)))
-                    (iniciar (car pPremisas) pConclusiones) ; ir iterando entre los bloques de premisas de la lista
-                )
-                ((pair? pConclusiones)
-                    (append tupla (construirEstructura (car pConclusiones)))
-                    (iniciar pPremisas (car pConclusiones))
-                )
+                    ;(display "- Envio: ") (display (car pPremisas)) (newline)
+                    (define arbolPremisa (construirEstructura (car pPremisas)))
+
+                    (cond
+                        ((list? arbolPremisa)
+                            (set! pTupla (append pTupla arbolPremisa))
+                        )
+                        (else ; premisa individual
+                            (set! pTupla (append pTupla (list arbolPremisa)))
+                        )
+                    )
+                    ;(display "- Cola: ") (display (cdr pPremisas)) (newline)
+                    (crearEstructura (cdr pPremisas) pTupla) ; ir iterando entre los bloques de premisas de la lista
+                ) ; sin elementos, ya se recorrió todo
+                (else pTupla)
             )
 
-            tupla
+            ;pTupla
 
             ; (define arbolOperacion (construirEstructura (car pPremisas)))
             ; (display arbolOperacion)
             ; (newline)
         )
 
+        ; Construye un "árbol" con objetos 'Operación' de forma recursiva
         (define/public (construirEstructura expresion) 
             ; p -> (p v (r ^ q))
             ; Contenido de 'lst' tiene la forma: '("expresion" "permisa" 'noImporta' "premisa")
@@ -138,15 +147,11 @@
                     (define oper (car (cddr lst)))
                     (define op2 (car (cdddr lst)))
                     (define obj (crearObjectoOperacion 
-                        (list 
-                            (construirEstructura op1) 
-                            (construirEstructura op2)
-                        )
-                        oper "zona")
+                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
                     )
-                    (display "")
-                    ;(display "(.) noImporta (.)") (newline)
-                    ;(display lst)
+                    obj
+                    ; (display "(.) noImporta (.)") (newline)
+                    ; (display lst)   
                 )
 
                 ; (.) noImporta .
@@ -159,8 +164,7 @@
                     (define obj (crearObjectoOperacion 
                         (list (construirEstructura op1) op2) oper "zona")
                     )
-                    (display "")
-
+                    obj
                     ; (display "(.) noImporta .") (newline)
                     ; (display lst)
                 )
@@ -175,8 +179,7 @@
                     (define obj (crearObjectoOperacion 
                         (list op1 (construirEstructura op2)) oper "zona")
                     )
-                    (display "")
-
+                    obj
                     ; (display ". noImporta (.)") (newline)
                     ; (display lst)
                 )
@@ -189,11 +192,9 @@
                     (define oper (car (cddr lst)))
                     (define op2 (car (cdddr lst)))
                     (define obj (crearObjectoOperacion (list op1 op2) oper "zona"))
-
-                    ; (display ". noImporta .") (newline)
-                    ;( display lst)
-
                     obj
+                    ; (display ". noImporta .") (newline)
+                    ; ( display lst)
                 )
 
                 ; (.)
@@ -230,6 +231,7 @@
             )
             operacion
         )
+
         (super-new)
     )
 )
@@ -293,6 +295,10 @@
 
 (define pb (new Probador))
 ;(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
-(send pb acepte-deduccion "p->(pv(r^q)) => ~q->~p")
+(send pb acepte-deduccion "~q,r^p,p->(pv(r^q)) => ~w->~b,y^p,~x")
 
 ; ================================================================ ;
+
+; PRUEBAS
+
+;(display (send motor construirEstructura "p->(pv(r^q))"))
