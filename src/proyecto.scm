@@ -20,8 +20,8 @@
                     (define lstBloquesPremisas (car tupla))
                     (define lstBloquesConclusiones (car (cdr tupla)))
                     
-                    (set! estructuraPremisas (send motor crearEstructura lstBloquesPremisas '()))
-                    (set! estructuraConclusiones (send motor crearEstructura lstBloquesConclusiones '()))
+                    (set! estructuraPremisas (send motor crearEstructura lstBloquesPremisas "premisa" '()))
+                    (set! estructuraConclusiones (send motor crearEstructura lstBloquesConclusiones "conclusion" '()))
                     ;(display "estructuraPremisas: ") (display estructuraPremisas) (newline)
                     ;(display "estructuraConclusiones: ") (display estructuraConclusiones) (newline)
                     
@@ -126,12 +126,12 @@
     (class object%
 
         ; Construir una estructura lista que contiene objetos 'Operacion' en forma de "árbol"
-        (define/public (crearEstructura pPremisas pTupla)      
+        (define/public (crearEstructura pPremisas pZona pTupla)      
 
             (cond
                 ((pair? pPremisas)
                     ;(display "- Envio: ") (display (car pPremisas)) (newline)
-                    (define arbolPremisa (construirEstructura (car pPremisas)))
+                    (define arbolPremisa (construirEstructura (car pPremisas) pZona))
 
                     (cond
                         ((list? arbolPremisa)
@@ -142,20 +142,16 @@
                         )
                     )
                     ;(display "- Cola: ") (display (cdr pPremisas)) (newline)
-                    (crearEstructura (cdr pPremisas) pTupla) ; ir iterando entre los bloques de premisas de la lista
+                    (crearEstructura (cdr pPremisas) pZona pTupla) ; ir iterando entre los bloques de premisas de la lista
                 ) ; sin elementos, ya se recorrió todo
                 (else pTupla)
             )
 
             ;pTupla
-
-            ; (define arbolOperacion (construirEstructura (car pPremisas)))
-            ; (display arbolOperacion)
-            ; (newline)
         )
 
         ; Construye un "árbol" con objetos 'Operación' de forma recursiva
-        (define/public (construirEstructura expresion) 
+        (define/public (construirEstructura expresion pZona) 
             ; p -> (p v (r ^ q))
             ; Contenido de 'lst' tiene la forma: '("expresion" "permisa" 'noImporta' "premisa")
             (cond
@@ -182,7 +178,7 @@
                     )
 
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
                     )
 
                     ;(display "(.) noImporta (.)") (newline)
@@ -212,7 +208,7 @@
                     )
 
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
                     )
 
                     ;(display "(.) noImporta .") (newline)
@@ -241,7 +237,7 @@
                         )
                     )
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
                     )
 
                     ;(display ". noImporta (.)") (newline)
@@ -271,7 +267,7 @@
                     )
 
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
                     )
 
                     ;(display ". noImporta .") (newline)
@@ -286,7 +282,7 @@
                     (define op1 (car (cdr lst)))
 
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura (substring op1 1))) "~" "zona")
+                        (list (construirEstructura (substring op1 1) pZona)) "~" pZona)
                     )
                     ;(construirEstructura (eliminarCaracteres (car (cddr lst))))
                     ;(display "~(.)") (newline)
@@ -298,7 +294,7 @@
                 ((regexp-match? (send BC get-regx_6) expresion)
                     (define lst (regexp-match (send BC get-regx_6) expresion))
 
-                    (construirEstructura (eliminarCaracteres (car lst)))
+                    (construirEstructura (eliminarCaracteres (car lst)) pZona)
                     ;(display "(.)") (newline)
                     ;(display lst)
                 )
@@ -310,7 +306,7 @@
                     (define op1 (car (cdr lst)))
 
                     (define obj (crearObjectoOperacion 
-                        (list (construirEstructura (substring op1 1))) "~" "zona")
+                        (list (construirEstructura (substring op1 1) pZona)) "~" pZona)
                     )
 
                     ;(display ".") (newline)
