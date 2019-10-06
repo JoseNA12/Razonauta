@@ -158,7 +158,7 @@
             ; Contenido de 'lst' tiene la forma: '("expresion" "permisa" 'noImporta' "premisa")
             (cond
                 ; (.) noImporta (.)
-                ((regexp-match? (send BC get-regx_1) expresion)
+                ((and (regexp-match? (send BC get-regx_1) expresion) (confirmarRegx_1 expresion))
                     (define lst (regexp-match (send BC get-regx_1) expresion))
                     ; ("~(p)->(pv(r^q))" "~" "(p)" "->" #f "(pv(r^q))")
 
@@ -188,38 +188,8 @@
                     obj
                 )
 
-                ; (.) noImporta .
-                ((regexp-match? (send BC get-regx_2) expresion)
-                    (define lst (regexp-match (send BC get-regx_2) expresion))
-
-                    (define esNegativo1_? (car (cdr lst)))
-                    (define esNegativo2_? (car (cddddr lst)))
-
-                    (define op1 (car (cddr lst)))
-                    (define oper (car (cdddr lst)))
-                    (define op2 (car (cdr (cddddr lst))))
-
-                    (cond ((equal? esNegativo1_? "~")
-                            (set! op1 (string-append "~" op1))
-                        )
-                    )
-
-                    (cond ((equal? esNegativo2_? "~")
-                            (set! op2 (string-append "~" op2))
-                        )
-                    )
-
-                    (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
-                    )
-
-                    ;(display "(.) noImporta .") (newline)
-                    ;(display lst)
-                    obj
-                )
-
                 ; . noImporta (.)
-                ((regexp-match? (send BC get-regx_3) expresion)
+                ((and (regexp-match? (send BC get-regx_3) expresion) (confirmarRegx_3 expresion))
                     (define lst (regexp-match (send BC get-regx_3) expresion))
 
                     (define esNegativo1_? (car (cdr lst)))
@@ -277,6 +247,36 @@
                     obj
                 )
 
+                ; (.) noImporta .
+                ((and (regexp-match? (send BC get-regx_2) expresion) (confirmarRegx_2 expresion))
+                    (define lst (regexp-match (send BC get-regx_2) expresion))
+
+                    (define esNegativo1_? (car (cdr lst)))
+                    (define esNegativo2_? (car (cddddr lst)))
+
+                    (define op1 (car (cddr lst)))
+                    (define oper (car (cdddr lst)))
+                    (define op2 (car (cdr (cddddr lst))))
+
+                    (cond ((equal? esNegativo1_? "~")
+                            (set! op1 (string-append "~" op1))
+                        )
+                    )
+
+                    (cond ((equal? esNegativo2_? "~")
+                            (set! op2 (string-append "~" op2))
+                        )
+                    )
+
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura op1 pZona) (construirEstructura op2 pZona)) oper pZona)
+                    )
+
+                    ;(display "(.) noImporta .") (newline)
+                    ;(display lst)
+                    obj
+                )
+
                 ; ~(.)
                 ((regexp-match? (send BC get-regx_5) expresion)
                     (define lst (regexp-match (send BC get-regx_5) expresion))
@@ -323,7 +323,7 @@
                     ;(display lst)
                     (car lst)
                 )
-
+                
             )
         )
         ; Remueve los caracteres laterales de una expresión. Ej: "(pv(r^q))" -> "pv(r^q)" 
@@ -340,6 +340,70 @@
                 )
             )
             operacion
+        )
+
+        (define (confirmarRegx_1 e)
+            (define lst (regexp-match (send BC get-regx_1) e))
+            (define op1 (car (cddr lst)))
+            (define parenAbrir 0) (define parenCerrar 0)
+
+            (for ([i (string->list op1)]) ; iterator binding
+                (cond
+                    ((equal? i #\()
+                        (set! parenAbrir (+ parenAbrir 1))
+                    )
+                    ((equal? i #\))
+                        (set! parenCerrar (+ parenCerrar 1))
+                    )
+                )
+            )
+            (cond
+                ((equal? (- parenAbrir parenCerrar) 0) #t)
+                (else #f)
+            )
+        )
+
+        (define (confirmarRegx_3 e)
+            (define lst (regexp-match (send BC get-regx_3) e))
+            (define op2 (car (cdr (cddddr lst))))
+
+            (define parenAbrir 0) (define parenCerrar 0)
+
+            (for ([i (string->list op2)]) ; iterator binding
+                (cond
+                    ((equal? i #\()
+                        (set! parenAbrir (+ parenAbrir 1))
+                    )
+                    ((equal? i #\))
+                        (set! parenCerrar (+ parenCerrar 1))
+                    )
+                )
+            )
+            (cond
+                ((equal? (- parenAbrir parenCerrar) 0) #t)
+                (else #f)
+            )
+        )
+
+        (define (confirmarRegx_2 e)
+            (define lst (regexp-match (send BC get-regx_2) e))
+            (define op1 (car (cddr lst)))
+            (define parenAbrir 0) (define parenCerrar 0)
+
+            (for ([i (string->list op1)]) ; iterator binding
+                (cond
+                    ((equal? i #\()
+                        (set! parenAbrir (+ parenAbrir 1))
+                    )
+                    ((equal? i #\))
+                        (set! parenCerrar (+ parenCerrar 1))
+                    )
+                )
+            )
+            (cond
+                ((equal? (- parenAbrir parenCerrar) 0) #t)
+                (else #f)
+            )
         )
 
         (super-new)
@@ -603,7 +667,7 @@
 
         (field
             ; (.) noImporta (.)
-            (regx_1 "(~)?(\\([^()]+\\))(->|<->|v|\\^)(~)?(\\([^()]+\\))$")
+            (regx_1 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?(\\([^.]+\\))$")
             ; (.) noImporta .
             (regx_2 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?([a-uw-z]+)$")
             ; . noImporta (.)
