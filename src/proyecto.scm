@@ -33,7 +33,8 @@
         (define/public (pruebe-deduccion)
             (define e1 (new Estratega))
             (send e1 inicializarArbol estructuraPremisas estructuraConclusiones)
-            (set! raiz (send e1 getRaiz))
+            (set! raiz (send e1 getRoot))
+            (display "Listo.")
         )
 
         (define/public (arbol)
@@ -47,6 +48,7 @@
                 )
             )
         )
+        
         (super-new)
     )
 )
@@ -302,9 +304,8 @@
                 ; ~.
                 ((regexp-match? (send BC get-regx_7) expresion)
                     (define lst (regexp-match (send BC get-regx_7) expresion))
-                    
-                    (define op1 (car (cdr lst)))
 
+                    (define op1 (car (cdr lst))) 
                     (define obj (crearObjectoOperacion 
                         (list (construirEstructura (substring op1 1) pZona)) "~" pZona)
                     )
@@ -351,16 +352,18 @@
             (raiz null)
         )
 
-        (define/public (getRaiz)
-            raiz
-        )
+        (define/public (getRoot) raiz)
 
         ; Init
         (define/public (inicializarArbol listaPremisas listaConclusion)
-            (display "estructuraPremisas: ") (display listaPremisas) (newline)
-            (display "estructuraConclusiones: ") (display listaConclusion) (newline)
+            (display "estructuraPremisas: ") 
+            (imprimirArgumento listaPremisas)
+            (newline)
+            (display "estructuraConclusiones: ") 
+            (imprimirArgumento listaConclusion)
+            (newline)
 
-            (set! raiz(new raiz% (premisa listaPremisas) (conclusion listaConclusion)))
+            (set! raiz(new nodo% (premisa listaPremisas) (conclusion listaConclusion)))
             (procesarNodo raiz)
         )
         
@@ -370,6 +373,8 @@
             (define conclusion (send nodo get-conclusion))
             (cond 
                 ((equal? (procesarArgumento nodo premisas "premisa" conclusion) null)
+                    (set! premisas (send nodo get-premisa))
+                    (set! conclusion (send nodo get-conclusion))
                     (procesarArgumento nodo conclusion "conclusion" premisas)
                 )
             )
@@ -442,7 +447,7 @@
 
         ; Asigna el nodo hijo a su padre en el lado indicado
         (define/public (expandirRama ladoRama nodoPadre premisa conclusion formula regla)
-            (define nodoHijo (crearNodo premisa conclusion formula regla))
+            (define nodoHijo (crearNodo premisa conclusion))
             (cond 
                 ((equal? ladoRama 1)
                     (send nodoPadre insert-izq nodoHijo)
@@ -451,13 +456,13 @@
                     (send nodoPadre insert-der nodoHijo)
                 )
             )
+            (send nodoPadre set-formula formula)
+            (send nodoPadre set-regla regla)
             nodoHijo
         )
 
-        (define/public (crearNodo premisa conclusion regla formula)
+        (define/public (crearNodo premisa conclusion)
             (define nodo (new nodo% (premisa premisa) (conclusion conclusion)))
-            (send nodo set-formula formula)
-            (send nodo set-regla regla)
             nodo
         )
 
@@ -592,14 +597,13 @@
 
 (define BaseConocimiento
     (class object%
-
         ; [a-uw-z~]: Se incluye cualquier letra del abecedario excepto 'v' e incluyendo '~'
         ; '^' al inicio indica que se debe empezar por ese caracter
         ; '$' al final indica que coincide solo al final de la cadena (hace más estricto al patrón)
 
         (field
             ; (.) noImporta (.)
-            (regx_1 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?(\\([^.]+\\))$")
+            (regx_1 "(~)?(\\([^()]+\\))(->|<->|v|\\^)(~)?(\\([^()]+\\))$")
             ; (.) noImporta .
             (regx_2 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?([a-uw-z]+)$")
             ; . noImporta (.)
@@ -629,9 +633,6 @@
     )
 )
 
-;============================================================
-;============================================================
-
 (define Operacion%
    (class object%
         (init-field operandos operador zona)
@@ -649,14 +650,11 @@
     )
 )
 
-;============================================================
-;============================================================
-;Raiz del ábol
-(define raiz%
+(define nodo%
     (class object%
         (init-field premisa conclusion)
         
-        (field (izq null) (der null))
+        (field (izq null) (der null) (formula " ") (regla "axioma"))
         
         (define/public (insert-izq node)
             (set! izq node)
@@ -674,58 +672,85 @@
         
         (define/public (get-conclusion) conclusion)
         
-        (super-new)
-    )
-)
-
-;Nodos del árbol (herencia)
-(define nodo%
-    (class raiz%
-        (inherit-field premisa conclusion)
-        
-        (field (formula null) (regla null))
-
         (define/public (set-formula nueva-formula)
             (set! formula nueva-formula))
 
         (define/public (set-regla nueva-regla)
             (set! regla nueva-regla))
-
-        (define/public (to-string)
-            (if (and (not (null? formula))(not (null? regla)))
-                (string-append "Nodo : " premisa conclusion "   |-" formula "   |-"regla)
-                (string-append "Nodo : " premisa conclusion)))
         
-        (define/public (print-nodo)
-            (define nodo-completo (send this to-string))
-            (printf nodo-completo))
-            
+        (define/public (get-formula) formula)
+
+        (define/public (get-regla) regla)
+
         (super-new)
     )
 )
 
 (define (pre-orden arbol)
     (cond ((not (null? arbol))
-            (display (send arbol get-premisa)) (newline)
+            (newline)
+            (imprimirNodo arbol)
             (pre-orden (send arbol get-node-izq))
             (pre-orden (send arbol get-node-der))   
         )
     )
 )
 
+(define (imprimirNodo nodo)
+    (display "Nodo: ") 
+    (imprimirArgumento (send nodo get-premisa))
+    (display " => ") 
+    (imprimirArgumento (send nodo get-conclusion)) 
+    (display "| Formula: ") 
+    (imprimirExpresion (send nodo get-formula))
+    (display "| Regla: ") 
+    (display (send nodo get-regla)) 
+    (newline)
+)
+
+(define (imprimirArgumento argumento) 
+    (imprimirExpresion (car argumento))
+    (cond 
+        ((not (equal? (cdr argumento) (list)))
+            (display ", ")
+            (imprimirArgumento (cdr argumento))
+        )
+    )   
+)
+
+(define (imprimirExpresion expresion) 
+    (cond
+        ((string? expresion)
+            (display expresion)
+        )
+        (else
+            (define operador (send expresion get-operador)) 
+            (define operandos (send expresion get-operandos)) 
+            (display "(")
+            (cond 
+                ((equal? operador "~")
+                    (display operador)
+                    (imprimirExpresion (car operandos))
+                )
+                (else 
+                    (imprimirExpresion (car operandos))
+                    (display operador)
+                    (imprimirExpresion (cadr operandos))
+                )
+            )
+            (display ")")      
+        )
+    )
+)
+
+
+
+
 ; ================================================================ ;
 
 (define BC (new BaseConocimiento))
 (define motor (new Motor))
-
 (define pb (new Probador))
-(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
-
-;estructuraPremisas: (#(struct:object:Operacion% ...) #(struct:object:Operacion% ...) #(struct:object:Operacion% ...))
-;estructuraConclusiones: (#(struct:object:Operacion% ...) #(struct:object:Operacion% ...) #(struct:object:Operacion% ...))
-
-;(send pb acepte-deduccion "~q,r^p,p->(pv(r^q)) => ~w->~b,y^p,~x")
+(send pb acepte-deduccion "~p->~q,~r => ~q->~p") 
 (send pb pruebe-deduccion)
 (send pb arbol)
-
-; ================================================================ ;
