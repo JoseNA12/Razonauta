@@ -18,6 +18,9 @@
 )
  
 (define (inicializarArbol listaPremisas listaConclusion)
+  (display "estructuraPremisas: ") (display listaPremisas) (newline)
+  (display "estructuraConclusiones: ") (display listaConclusion) (newline)
+
   (define raiz(new raiz% (premisa listaPremisas) (conclusion listaConclusion)))
   (procesarNodo raiz)
 )
@@ -360,10 +363,30 @@
 (define operacion10
   (new Operacion% (operandos '("q"))
        (operador "~")
+       (zona "premisa")
+  )
+)
+
+(define qNegConclu
+  (new Operacion% (operandos '("q"))
+       (operador "~")
        (zona "conclusion")
   )
 )
 
+(define pNegConclu
+  (new Operacion% (operandos '("p"))
+       (operador "~")
+       (zona "conclusion")
+  )
+)
+
+(define implicaDobleNegativoConclu
+  (new Operacion% (operandos (list qNegConclu pNegConclu))
+       (operador "->")
+       (zona "conclusion")
+  )
+)
 
 (define operacion2
   (new Operacion% (operandos '("p"))
@@ -372,8 +395,15 @@
   )
 )
 
-(define operacion3
-  (new Operacion% (operandos (list operacion operacion2))
+(define rNegPremisa
+  (new Operacion% (operandos '("r"))
+       (operador "~")
+       (zona "premisa")
+  )
+)
+
+(define implicaDobleNegativo
+  (new Operacion% (operandos (list operacion2 operacion10))
        (operador "->")
        (zona "premisa")
   )
@@ -386,15 +416,13 @@
   )
 )
 
-(set! premisa (cons operacion3 premisa))
-(set! premisa (cons operacion6 premisa))
-
-(set! conclusion (cons operacion4 conclusion))
-(set! conclusion (cons operacion7 conclusion))
-
+(set! premisa (cons implicaDobleNegativo premisa ))
+(set! premisa (cons rNegPremisa premisa ))
+(set! conclusion (cons implicaDobleNegativoConclu conclusion ))
 ;============================================================
 ; ((~q -> ~p), (p ^ r) -> (p v q), (r -> ~q))
 ;============================================================
 
+;"~p->~q,~r => ~q->~p
 ; 
 (inicializarArbol premisa conclusion)

@@ -162,82 +162,175 @@
                 ; (.) noImporta (.)
                 ((regexp-match? (send BC get-regx_1) expresion)
                     (define lst (regexp-match (send BC get-regx_1) expresion))
+                    ; ("~(p)->(pv(r^q))" "~" "(p)" "->" #f "(pv(r^q))")
 
-                    (define op1 (car (cdr lst)))
-                    (define oper (car (cddr lst)))
-                    (define op2 (car (cdddr lst)))
+                    (define esNegativo1_? (car (cdr lst)))
+                    (define esNegativo2_? (car (cddddr lst)))
+
+                    (define op1 (car (cddr lst)))
+                    (define oper (car (cdddr lst)))
+                    (define op2 (car (cdr (cddddr lst))))
+
+                    (cond ((equal? esNegativo1_? "~")
+                            (set! op1 (string-append "~" op1))
+                        )
+                    )
+
+                    (cond ((equal? esNegativo2_? "~")
+                            (set! op2 (string-append "~" op2))
+                        )
+                    )
+
                     (define obj (crearObjectoOperacion 
                         (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
                     )
+
+                    ;(display "(.) noImporta (.)") (newline)
+                    ;(display lst)
                     obj
-                    ; (display "(.) noImporta (.)") (newline)
-                    ; (display lst)   
                 )
 
                 ; (.) noImporta .
                 ((regexp-match? (send BC get-regx_2) expresion)
                     (define lst (regexp-match (send BC get-regx_2) expresion))
 
-                    (define op1 (car (cdr lst)))
-                    (define oper (car (cddr lst)))
-                    (define op2 (car (cdddr lst)))
-                    (define obj (crearObjectoOperacion 
-                        (list (construirEstructura op1) op2) oper "zona")
+                    (define esNegativo1_? (car (cdr lst)))
+                    (define esNegativo2_? (car (cddddr lst)))
+
+                    (define op1 (car (cddr lst)))
+                    (define oper (car (cdddr lst)))
+                    (define op2 (car (cdr (cddddr lst))))
+
+                    (cond ((equal? esNegativo1_? "~")
+                            (set! op1 (string-append "~" op1))
+                        )
                     )
+
+                    (cond ((equal? esNegativo2_? "~")
+                            (set! op2 (string-append "~" op2))
+                        )
+                    )
+
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                    )
+
+                    ;(display "(.) noImporta .") (newline)
+                    ;(display lst)
                     obj
-                    ; (display "(.) noImporta .") (newline)
-                    ; (display lst)
                 )
 
                 ; . noImporta (.)
                 ((regexp-match? (send BC get-regx_3) expresion)
                     (define lst (regexp-match (send BC get-regx_3) expresion))
 
-                    (define op1 (car (cdr lst)))
-                    (define oper (car (cddr lst)))
-                    (define op2 (car (cdddr lst)))
-                    (define obj (crearObjectoOperacion 
-                        (list op1 (construirEstructura op2)) oper "zona")
+                    (define esNegativo1_? (car (cdr lst)))
+                    (define esNegativo2_? (car (cddddr lst)))
+
+                    (define op1 (car (cddr lst)))
+                    (define oper (car (cdddr lst)))
+                    (define op2 (car (cdr (cddddr lst))))
+
+                    (cond ((equal? esNegativo1_? "~")
+                            (set! op1 (string-append "~" op1))
+                        )
                     )
+
+                    (cond ((equal? esNegativo2_? "~")
+                            (set! op2 (string-append "~" op2))
+                        )
+                    )
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                    )
+
+                    ;(display ". noImporta (.)") (newline)
+                    ;(display lst)
                     obj
-                    ; (display ". noImporta (.)") (newline)
-                    ; (display lst)
                 )
 
                 ; . noImporta .
                 ((regexp-match? (send BC get-regx_4) expresion)
                     (define lst (regexp-match (send BC get-regx_4) expresion))
 
-                    (define op1 (car (cdr lst)))
-                    (define oper (car (cddr lst)))
-                    (define op2 (car (cdddr lst)))
-                    (define obj (crearObjectoOperacion (list op1 op2) oper "zona"))
+                    (define esNegativo1_? (car (cdr lst)))
+                    (define esNegativo2_? (car (cddddr lst)))
+
+                    (define op1 (car (cddr lst)))
+                    (define oper (car (cdddr lst)))
+                    (define op2 (car (cdr (cddddr lst))))
+
+                    (cond ((equal? esNegativo1_? "~")
+                            (set! op1 (string-append "~" op1))
+                        )
+                    )
+
+                    (cond ((equal? esNegativo2_? "~")
+                            (set! op2 (string-append "~" op2))
+                        )
+                    )
+
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura op1) (construirEstructura op2)) oper "zona")
+                    )
+
+                    ;(display ". noImporta .") (newline)
+                    ;(display lst)
                     obj
-                    ; (display ". noImporta .") (newline)
-                    ; ( display lst)
                 )
 
-                ; (.)
+                ; ~(.)
                 ((regexp-match? (send BC get-regx_5) expresion)
                     (define lst (regexp-match (send BC get-regx_5) expresion))
 
-                    (construirEstructura (eliminarParentesis (car lst)))
-                    ; (display "(.)") (newline)
-                    ; (display lst)
+                    (define op1 (car (cdr lst)))
+
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura (substring op1 1))) "~" "zona")
+                    )
+                    ;(construirEstructura (eliminarCaracteres (car (cddr lst))))
+                    ;(display "~(.)") (newline)
+                    ;(display lst)
+                    obj
+                )
+
+                ; (.)
+                ((regexp-match? (send BC get-regx_6) expresion)
+                    (define lst (regexp-match (send BC get-regx_6) expresion))
+
+                    (construirEstructura (eliminarCaracteres (car lst)))
+                    ;(display "(.)") (newline)
+                    ;(display lst)
+                )
+
+                ; ~.
+                ((regexp-match? (send BC get-regx_7) expresion)
+                    (define lst (regexp-match (send BC get-regx_7) expresion))
+                    
+                    (define op1 (car (cdr lst)))
+
+                    (define obj (crearObjectoOperacion 
+                        (list (construirEstructura (substring op1 1))) "~" "zona")
+                    )
+
+                    ;(display ".") (newline)
+                    ;(display lst)
+                    obj
                 )
 
                 ; .
-                ((regexp-match? (send BC get-regx_6) expresion)
-                    (define lst (regexp-match (send BC get-regx_6) expresion))
-                    ; (display ".") (newline)
-                    ;( display lst)
-
+                ((regexp-match? (send BC get-regx_8) expresion)
+                    (define lst (regexp-match (send BC get-regx_8) expresion))
+                    
+                    ;(display ".") (newline)
+                    ;(display lst)
                     (car lst)
                 )
+
             )
         )
-        ; Remueve los parentesis laterales de una expresión. Ej: "(pv(r^q))" -> "pv(r^q)" 
-        (define (eliminarParentesis pExpresion)
+        ; Remueve los caracteres laterales de una expresión. Ej: "(pv(r^q))" -> "pv(r^q)" 
+        (define (eliminarCaracteres pExpresion)
             (define x (substring pExpresion 1))
             (substring x 0 (- (string-length x) 1))
         )
@@ -268,6 +361,9 @@
 
         ; Init
         (define/public (inicializarArbol listaPremisas listaConclusion)
+            (display "estructuraPremisas: ") (display listaPremisas) (newline)
+            (display "estructuraConclusiones: ") (display listaConclusion) (newline)
+
             (set! raiz(new raiz% (premisa listaPremisas) (conclusion listaConclusion)))
             (procesarNodo raiz)
         )
@@ -325,7 +421,7 @@
                     (define operacion (car argumento))
                     (cond
                         ((string? operacion)
-                        (set! ramas (list (append (car ramas) (list operacion))))
+                            (set! ramas (list (append (car ramas) (list operacion))))
                             (procesarExpresionesArgumento (cdr argumento) ramas)
                         )
                         (else 
@@ -507,17 +603,21 @@
 
         (field
             ; (.) noImporta (.)
-            (regx_1 "(^\\([^.]+\\))(->|<->|v|\\^)(\\([^.]+\\))$")
+            (regx_1 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?(\\([^.]+\\))$")
             ; (.) noImporta .
-            (regx_2 "(^\\([^.]+\\))(->|<->|v|\\^)([a-uw-z~]+)$")
+            (regx_2 "(~)?(\\([^.]+\\))(->|<->|v|\\^)(~)?([a-uw-z]+)$")
             ; . noImporta (.)
-            (regx_3 "(^[a-uw-z~]+)(->|<->|v|\\^)(\\([^.]+\\))$")
+            (regx_3 "(~)?([a-uw-z]+)(->|<->|v|\\^)(~)?(\\([^.]+\\))$")
             ; . noImporta .
-            (regx_4 "(^[a-uw-z~]+)(->|<->|v|\\^)([a-uw-z~]+)$")
+            (regx_4 "(~)?([a-uw-z]+)(->|<->|v|\\^)(~)?([a-uw-z]+)$")
+            ; ~(.)
+            (regx_5 "(^~\\([^.]+\\))$")
             ; (.)
-            (regx_5 "(^\\([^.]+\\))$")
+            (regx_6 "(^\\([^.]+\\))$")
+            ; ~.
+            (regx_7 "(^~[a-uw-z]+)$")
             ; .
-            (regx_6 "(^[a-uw-z~]+)$")
+            (regx_8 "(^[a-uw-z]+)$")
         )
 
         (define/public (get-regx_1) regx_1)
@@ -526,6 +626,8 @@
         (define/public (get-regx_4) regx_4)
         (define/public (get-regx_5) regx_5)
         (define/public (get-regx_6) regx_6)
+        (define/public (get-regx_7) regx_7)
+        (define/public (get-regx_8) regx_8)
 
         (super-new)
     )
@@ -621,8 +723,12 @@
 (define motor (new Motor))
 
 (define pb (new Probador))
-;(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
-(send pb acepte-deduccion "~q,r^p,p->(pv(r^q)) => ~w->~b,y^p,~x")
+(send pb acepte-deduccion "~p->~q,~r => ~q->~p")
+
+;estructuraPremisas: (#(struct:object:Operacion% ...) #(struct:object:Operacion% ...) #(struct:object:Operacion% ...))
+;estructuraConclusiones: (#(struct:object:Operacion% ...) #(struct:object:Operacion% ...) #(struct:object:Operacion% ...))
+
+;(send pb acepte-deduccion "~q,r^p,p->(pv(r^q)) => ~w->~b,y^p,~x")
 (send pb pruebe-deduccion)
 (send pb arbol)
 
