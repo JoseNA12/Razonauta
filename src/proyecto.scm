@@ -44,7 +44,18 @@
                 )
                 (else 
                     (display "Arbol de solucion") (newline)
-                    (pre-orden raiz)
+                    (pre-orden raiz "arbol")
+                )
+            )
+        )
+
+        (define/public (justifique)
+            (cond 
+                ((equal? raiz null)
+                    (display "Error. Pruebe la deduccion primero.") (newline)
+                )
+                (else 
+                    (imprimirJustificacion raiz)
                 )
             )
         )
@@ -371,23 +382,17 @@
         (define/public (procesarNodo nodo)
             (define premisas (send nodo get-premisa))
             (define conclusion (send nodo get-conclusion))
-            (cond 
-                ((equal? (procesarArgumento nodo premisas "premisa" conclusion) null)
-                    (set! premisas (send nodo get-premisa))
-                    (set! conclusion (send nodo get-conclusion))
-                    (procesarArgumento nodo conclusion "conclusion" premisas)
-                )
-            )
+            (procesarArgumento nodo premisas "premisa" conclusion 1)
         )
 
-        ; Recorre cada expresion del argumento en busca de alguno que pueda ser modificado.
-        (define/public (procesarArgumento nodo argumento zonaArgumento contraArgumento)
+        ; Recibe un cambio en el argumento y genera nuevos hijos con eso dependiendo de cuantas ramas nuevas y la zona nueva que vengan.
+        (define/public (procesarArgumento nodo argumento zonaArgumento contraArgumento num)
             (define result (procesarExpresionesArgumento argumento  (list (list ))) )
             (cond 
-                ((equal? result null)
-                    null
+                ((and (equal? result null) (equal? num 1))
+                    (procesarArgumento nodo contraArgumento "conclusion" argumento 2)
                 )
-                (else 
+                ((not (equal? result null))
                     (define rama (car result))
                     (define regla (cadr result))
                     (define formula (caddr result))
@@ -415,7 +420,7 @@
         ; Procesa cada expresion contenida en el argumento con el fin de realizar el cambio. Ramas representa la nueva rama que saldra del arbol
         (define/public (procesarExpresionesArgumento argumento ramas)
             (cond 
-                ((equal? argumento '())
+                ((equal? argumento (list))
                     null
                 )
                 (else 
@@ -435,29 +440,34 @@
 
         ; Crea nuevos hijos para el nodo padre y continua con la recursion de procesamiento para estos nodos hijos. 
         (define/public (generarHijos ladoRama nodoPadre argumentoCambiado contraArgumento formula regla zonaArgumento)
+            (define newNodo null)
             (cond
                 ((equal? zonaArgumento "premisa")
-                    (procesarNodo (expandirRama ladoRama nodoPadre argumentoCambiado contraArgumento formula regla))
-                )
+                    (set! newNodo (expandirRama ladoRama nodoPadre argumentoCambiado contraArgumento formula regla)))
                 (else
-                    (procesarNodo (expandirRama ladoRama nodoPadre contraArgumento argumentoCambiado formula regla))
-                )
-            )
+                    (set! newNodo (expandirRama ladoRama nodoPadre contraArgumento argumentoCambiado formula regla))))
+            (procesarNodo newNodo)
+            null
         )
 
         ; Asigna el nodo hijo a su padre en el lado indicado
         (define/public (expandirRama ladoRama nodoPadre premisa conclusion formula regla)
+            
             (define nodoHijo (crearNodo premisa conclusion))
+            (send nodoPadre set-formula formula)
+            (send nodoPadre set-regla regla)
+            ;(display "Nodo Padre: ")(imprimirNodo nodoPadre)(newline)
             (cond 
                 ((equal? ladoRama 1)
+                    ;(display "Nuevo hijo izquierdo")(newline)
                     (send nodoPadre insert-izq nodoHijo)
                 )
                 (else 
+             ;       (display "Nuevo hijo derecho")(newline)
                     (send nodoPadre insert-der nodoHijo)
                 )
             )
-            (send nodoPadre set-formula formula)
-            (send nodoPadre set-regla regla)
+            ;(display "Nodo hijo: ")(imprimirNodo nodoHijo)(newline)
             nodoHijo
         )
 
@@ -474,7 +484,7 @@
             (define formula operacion)
             (define nuevaZona (cadr result))
             (define nuevaOperacion (cdr (cdr result))) 
-            (cond 
+            (cond
                 ((or (equal? regla "and-der") (equal? regla "or-izq"))
                     (define ramaHija1 (list (append (append (car ramas) (list (car nuevaOperacion))) (cdr argumento))))
                     (define ramaHija2 (list (append (append (car ramas) (list (cadr nuevaOperacion))) (cdr argumento))))
@@ -686,13 +696,13 @@
     )
 )
 
-(define (pre-orden arbol)
+(define (pre-orden arbol funcion)
     (cond ((not (null? arbol))
-            (newline)
-            (imprimirNodo arbol)
-            (pre-orden (send arbol get-node-izq))
-            (pre-orden (send arbol get-node-der))   
-        )
+        (cond 
+            ((equal? funcion "arbol") (imprimirNodo arbol))
+            (else (imprimirFormula arbol)))
+        (pre-orden (send arbol get-node-izq) funcion)
+        (pre-orden (send arbol get-node-der) funcion))
     )
 )
 
@@ -709,13 +719,20 @@
 )
 
 (define (imprimirArgumento argumento) 
-    (imprimirExpresion (car argumento))
     (cond 
-        ((not (equal? (cdr argumento) (list)))
-            (display ", ")
-            (imprimirArgumento (cdr argumento))
+        ((equal? argumento (list))
+            (display "()")
         )
-    )   
+        (else
+            (imprimirExpresion (car argumento))
+            (cond 
+                ((not (equal? (cdr argumento) (list)))
+                    (display ", ")
+                    (imprimirArgumento (cdr argumento))
+                )
+            )   
+        )
+    )
 )
 
 (define (imprimirExpresion expresion) 
@@ -743,8 +760,27 @@
     )
 )
 
+(define (imprimirJustificacion nodo)
+    (display "Deduccion: ")
+    (display "Nodo: ") 
+    (imprimirArgumento (send nodo get-premisa))
+    (display " => ") 
+    (imprimirArgumento (send nodo get-conclusion)) 
+    (newline)
+    (display "Prueba: ")
+    (newline)
+    (pre-orden nodo "justificacion")
+)
 
-
+(define (imprimirFormula nodo)
+    (define formula (send nodo get-formula)) 
+    (cond
+       ((not(equal? formula " "))
+            (display ".  ") (imprimirExpresion formula)
+            (newline)
+       )
+    )   
+)
 
 ; ================================================================ ;
 
@@ -754,3 +790,4 @@
 (send pb acepte-deduccion "~p->~q,~r => ~q->~p") 
 (send pb pruebe-deduccion)
 (send pb arbol)
+(send pb justifique)

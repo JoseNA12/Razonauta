@@ -1,5 +1,7 @@
 #lang scheme
 
+(define raiz null)
+
 (define Operacion%
    (class object%
       (init-field operandos operador zona)
@@ -21,7 +23,7 @@
   (display "estructuraPremisas: ") (display listaPremisas) (newline)
   (display "estructuraConclusiones: ") (display listaConclusion) (newline)
 
-  (define raiz(new raiz% (premisa listaPremisas) (conclusion listaConclusion)))
+  (set! raiz(new raiz% (premisa listaPremisas) (conclusion listaConclusion)))
   (procesarNodo raiz)
 )
 
@@ -49,7 +51,7 @@
       (display "No se puede procesar este argumento") (newline)
       null
     )
-    (else 
+    (else ; ramas: ((#(struct:object:Operacion% ...) (r)))
       (define rama (car result))
       (define regla (cadr result))
       (define formula (caddr result))
@@ -124,7 +126,14 @@
           (display "negativo carepicha")
           (define ramaZona1 (list (append (car ramas) (cdr argumento))))
           (define ramaZona2 (list nuevaOperacion))
+          (newline)
+          (display "ramaZona1")
+          (display ramaZona1)
+          (newline)
           (set! ramas (list (list (car ramaZona1) (car ramaZona2))))
+          (display "ramas: ")
+          (display ramas)
+          (newline)
         )
       )
     )
@@ -266,56 +275,67 @@
 ;============================================================
 ;Raiz del ábol
 (define raiz%
-  (class object%
-    (init-field premisa conclusion)
-    
-    (field (izq null) (der null))
-    
-    (define/public (insert-izq node)
-      (set! izq node))
+    (class object%
+        (init-field premisa conclusion)
+        
+        (field (izq null) (der null))
+        
+        (define/public (insert-izq node)
+            (set! izq node)
+        )
 
-    (define/public (get-node-izq)
-      izq)
+        (define/public (get-node-izq) izq)  
 
-    (define/public (insert-der node)
-      (set! der node))
+        (define/public (insert-der node)
+            (set! der node)
+        )
 
-    (define/public (get-node-der)
-      der)
+        (define/public (get-node-der) der)
 
-    (define/public (get-premisa)
-      premisa)
-    
-    (define/public (get-conclusion)
-      conclusion)
-    
-    (super-new)
-  )
+        (define/public (get-premisa) premisa)
+        
+        (define/public (get-conclusion) conclusion)
+        
+        (super-new)
+    )
 )
 
 ;Nodos del árbol (herencia)
 (define nodo%
-  (class raiz%
-    (inherit-field premisa conclusion)
-    
-    (field (formula null) (regla null))
-
-    (define/public (set-formula nueva-formula)
-      (set! formula nueva-formula))
-
-    (define/public (set-regla nueva-regla)
-      (set! regla nueva-regla))
-
-    (define/public (to-string)
-      (if (and (not (null? formula))(not (null? regla)))
-        (string-append "Nodo : " premisa conclusion "   |-" formula "   |-"regla)
-        (string-append "Nodo : " premisa conclusion)))
-    
-    (define/public (print-nodo)
-        (define nodo-completo (send this to-string))
-        (printf nodo-completo))
+    (class raiz%
+        (inherit-field premisa conclusion)
         
-    (super-new)))
+        (field (formula null) (regla null))
+
+        (define/public (set-formula nueva-formula)
+            (set! formula nueva-formula))
+
+        (define/public (set-regla nueva-regla)
+            (set! regla nueva-regla))
+
+        (define/public (to-string)
+            (if (and (not (null? formula))(not (null? regla)))
+                (string-append "Nodo : " premisa conclusion "   |-" formula "   |-"regla)
+                (string-append "Nodo : " premisa conclusion)))
+        
+        (define/public (print-nodo)
+            (define nodo-completo (send this to-string))
+            (printf nodo-completo))
+            
+        (super-new)
+    )
+)
+
+(define (pre-orden arbol)
+    (cond ((not (null? arbol))
+            (newline)
+            (display "Premisa: ") (display (send arbol get-premisa)) (display " Conclusion: ") (display (send arbol get-conclusion)) 
+            (pre-orden (send arbol get-node-izq))
+            (pre-orden (send arbol get-node-der))   
+        )
+    )
+)
+
 
 
 ;============================================================
@@ -416,13 +436,16 @@
   )
 )
 
-(set! premisa (cons implicaDobleNegativo premisa ))
+(set! premisa (append premisa implicaDobleNegativo))
 (set! premisa (cons rNegPremisa premisa ))
+
+(display premisa) 
 (set! conclusion (cons implicaDobleNegativoConclu conclusion ))
 ;============================================================
 ; ((~q -> ~p), (p ^ r) -> (p v q), (r -> ~q))
 ;============================================================
 
 ;"~p->~q,~r => ~q->~p
-; 
+; ""
 (inicializarArbol premisa conclusion)
+(pre-orden raiz)
