@@ -779,7 +779,7 @@
     (imprimirExpresion (send nodo get-formula))
     (display " | Regla: ") 
     (display (send nodo get-regla)) 
-    ;(newline)
+    (newline)
 )
 
 (define (imprimirArgumento argumento) 
