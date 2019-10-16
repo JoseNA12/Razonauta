@@ -1,9 +1,0 @@
-#lang scheme
-
-
-(define arbol valor izq der)
-    (cond ((and (null? izq)
-                (null? der))
-            valor)
-        (else
-            (list valor izq der))))
